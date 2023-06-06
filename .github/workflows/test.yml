@@ -14,4 +14,4 @@ jobs:
           username: thejcannon
           password: ${{ secrets.DOCKER_PAT }}
       - run: |
-          docker manifest inspect ubuntu:focal
+          docker manifest inspect nvcr.io/nvidia/cuda:12.1.1-base-ubuntu20.04
