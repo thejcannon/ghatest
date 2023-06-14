@@ -14,3 +14,9 @@ jobs:
       - run: |
           ${{ matrix.maybe_sleep }}
           exit 1
+  job2:
+    name: Afterwards
+    runs-on: ubuntu-20.04
+    needs: [test]
+    steps:
+      - run: "echo helloworld"
