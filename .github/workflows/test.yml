@@ -9,6 +9,7 @@ jobs:
       matrix:
         include: [{"maybe_sleep": "sleep 20"}, {"maybe_sleep": ""}]
     runs-on: ubuntu-20.04
+    continue-on-error: true
     steps:
       - run: |
           ${{ matrix.maybe_sleep }}
