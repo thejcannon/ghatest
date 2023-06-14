@@ -17,6 +17,6 @@ jobs:
     name: Afterwards
     runs-on: ubuntu-20.04
     needs: [test]
-    if: needs.test.conclusion == "success"
+    if: needs.test.conclusion == 'success'
     steps:
       - run: "echo helloworld"
