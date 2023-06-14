@@ -16,4 +16,4 @@ jobs:
     needs: [test]
     #if: needs.test.conclusion == 'success'
     steps:
-      - run: "${{ needs.test.conclusion }}"
+      - run: "echo '${{ needs.test.conclusion }}'"
