@@ -12,11 +12,11 @@ jobs:
     continue-on-error: true
     steps:
       - run: |
-          ${{ matrix.maybe_sleep }}
-          exit 1
+          exit 0
   job2:
     name: Afterwards
     runs-on: ubuntu-20.04
     needs: [test]
+    if: needs.test.conclusion == "success"
     steps:
       - run: "echo helloworld"
