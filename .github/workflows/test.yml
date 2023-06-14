@@ -16,4 +16,4 @@ jobs:
     needs: [test]
     #if: needs.test.conclusion == 'success'
     steps:
-      - run: "echo '${{ needs.test }}'"
+      - run: "echo '${{ toJSON(needs.test) }}'"
