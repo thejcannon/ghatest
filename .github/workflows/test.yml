@@ -14,6 +14,6 @@ jobs:
     name: Afterwards
     runs-on: ubuntu-20.04
     needs: [test]
-    #if: needs.test.conclusion == 'success'
+    if: needs.test.result == 'success'
     steps:
       - run: "echo '${{ toJSON(needs.test) }}'"
