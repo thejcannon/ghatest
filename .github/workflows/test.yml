@@ -2,18 +2,11 @@ name: I'm a test
 
 on:
   workflow_dispatch:
-
+  issue_comment:
+    types: [created]
 jobs:
   test:
     runs-on: ubuntu-20.04
-    continue-on-error: true
     steps:
-      - run: "exit 0"
-  
-  job2:
-    name: Afterwards
-    runs-on: ubuntu-20.04
-    needs: [test]
-    if: needs.test.result == 'success'
-    steps:
-      - run: "echo '${{ toJSON(needs.test) }}'"
+      - run: echo "${{ github.context }}"
+
