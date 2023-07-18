@@ -267,7 +267,6 @@ def main(version_match) -> None:
                 target_version=version,
                 extra_globs=["pants/_version/VERSION", "pants/VERSION"],
             )
-            print(new_whl.lstrip("./"))
 
             with open(new_whl, "rb") as f:
                 response = requests.post(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": reversioned_filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
@@ -275,7 +274,7 @@ def main(version_match) -> None:
 
             os.remove(filename)
             os.remove(new_whl)
-            return
+
 
 if __name__ == "__main__":
     import sys
