@@ -10,8 +10,7 @@ jobs:
           RELEASE_TAG: release_2.18.0.dev5
           GH_TOKEN: ${{ secrets.GHTOK }}
           GH_REPO: pantsbuild/pants
-         run: "RELEASE_VERSION=\"\
-           ${RELEASE_TAG#release_}\"\n\n# NB: This could be a re-run of a release, in\
+         run: "RELEASE_VERSION=\"${RELEASE_TAG#release_}\"\n\n# NB: This could be a re-run of a release, in\
            \ the event a job/step failed.\nif ! gh release view $RELEASE_TAG ; then\n\
            \    GH_RELEASE_ARGS=(\"--notes\" \"\")\n    GH_RELEASE_ARGS+=(\"--title\"\
            \ \"$RELEASE_TAG\")\n    if [[ $RELEASE_VERSION =~ [[:alpha:]] ]]; then\n\
