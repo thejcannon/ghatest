@@ -6,6 +6,7 @@ jobs:
      runs-on: ubuntu-latest
      steps:
       - name: Make GitHub Release
+        id: info
         env:
           RELEASE_TAG: release_2.18.0.dev5
           GH_TOKEN: ${{ secrets.GHTOK }}
@@ -25,3 +26,5 @@ jobs:
            \ \"${GH_RELEASE_ARGS[@]}\" --draft\nfi\n\nASSET_UPLOAD_URL=$(gh release view\
            \ \"$RELEASE_TAG\" --json uploadUrl --jq '.uploadUrl | sub(\"\\\\{\\\\?.*$\"\
            ; \"\")')\necho \"release-asset-upload-url=$ASSET_UPLOAD_URL\" >> $GITHUB_OUTPUT\n"
+   - name: dump
+     run: echo "${{ steps.info.outputs.release-asset-upload-url }}"
