@@ -14,25 +14,26 @@ import re
 import shutil
 import tempfile
 import zipfile
+from xml.etree import ElementTree
 
 import github
 import requests
-from bs4 import BeautifulSoup
 
-def get_wheel_infos(tag_name, version, token):
+def get_wheel_infos(tag_name, token):
     sha = requests.get(
         f"https://api.github.com/repos/pantsbuild/pants/commits/{tag_name}",
         headers={
             "Authorization": f"Bearer {token}",
         }
     ).json()["sha"]
-    index = requests.get(
-        f"https://binaries.pantsbuild.org/wheels/pantsbuild.pants/{sha}/{version}%2bgit{sha[:8]}/index.html"
+    links = requests.get(
+        f"https://binaries.pantsbuild.org/?prefix=wheels/pantsbuild.pants/{sha}"
     )
-    soup = BeautifulSoup(index.text, 'html.parser')
-    a_tags = soup.find_all('a')
-    for tag in a_tags:
-        yield tag["href"], tag.contents[0], sha
+    links = ElementTree.fromstring(links.text)
+
+    for element in links.findall("./{*}Contents/{*}Key"):
+        if element.text.endswith(".whl"):
+            yield f"https://binaries.pantsbuild.org/{element.text.replace('+', '%2b')}", element.text.rsplit("/", 1)[-1], sha
 
 
 def _github():
@@ -242,15 +243,14 @@ def main(version_match) -> None:
         if not version.startswith(version_match):
             continue
 
-        wheel_infos = list(get_wheel_infos(release.tag_name, version, token))
+        wheel_infos = list(get_wheel_infos(release.tag_name, token))
         if not wheel_infos:
             continue
 
-        #print(f"Uploading wheels for {version}")
+        print(f"Uploading wheels for {version}")
         assets = {asset.name for asset in release.assets}
-        #print(assets)
         for url, filename, sha in list(wheel_infos):
-            reversioned_filename = filename.replace(f"+git{sha[:8]}", "")
+            reversioned_filename = filename.replace(f"+git{sha[:8]}", "").replace('linux_', "manylinux2014_")
             if reversioned_filename in assets:
                 continue
 
