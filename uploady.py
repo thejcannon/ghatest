@@ -28,7 +28,7 @@ def main(version_match) -> None:
         if version.count(".") != 2:
             continue
 
-        if not version.starstwith(version_match):
+        if not version.startswith(version_match):
             continue
 
         wheel_infos = get_wheel_infos(version)
