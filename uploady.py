@@ -15,7 +15,7 @@ def _github():
     return github.Github(auth=github.Auth.Token(token)), token
 
 
-def main() -> None:
+def main(version_match) -> None:
     github, token = _github()
     repo = github.get_repo("pantsbuild/pants")
     releases = repo.get_releases()
@@ -26,6 +26,9 @@ def main() -> None:
             continue
 
         if version.count(".") != 2:
+            continue
+
+        if not version.starstwith(version_match):
             continue
 
         wheel_infos = get_wheel_infos(version)
@@ -51,4 +54,5 @@ def main() -> None:
                 response.raise_for_status()
 
 if __name__ == "__main__":
-    main()
+    import sys
+    main((sys.argv[1:] + [""])[0])

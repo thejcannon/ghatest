@@ -1,6 +1,11 @@
 name: Uploady
 
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    version_match:
+      description: "Version to match"
+      required: true
+      type: string
 
 jobs:
   uploady:
@@ -9,6 +14,6 @@ jobs:
       - uses: actions/checkout@v3
       - run: python -m venv .venv
       - run: .venv/bin/pip install pygithub
-      - run: .venv/bin/python uploady.py
+      - run: .venv/bin/python uploady.py ${{ inputs.version_match }}
         env:
           GH_TOKEN: ${{ secrets.GHTOK }}
