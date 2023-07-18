@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: python -m venv .venv
-      - run: .venv/bin/pip install pygithub
+      - run: .venv/bin/pip install pygithub bs4 wheel
       - run: .venv/bin/python uploady.py ${{ inputs.version_match }}
         env:
           GH_TOKEN: ${{ secrets.GHTOK }}
