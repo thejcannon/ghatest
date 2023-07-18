@@ -2,10 +2,11 @@ name: Uploady
 
 on:
   workflow_dispatch:
-    version_match:
-      description: "Version to match"
-      required: true
-      type: string
+    inputs:
+      version_match:
+        description: "Version to match"
+        required: true
+        type: string
 
 jobs:
   uploady:
