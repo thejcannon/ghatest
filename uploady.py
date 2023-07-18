@@ -4,7 +4,7 @@ import subprocess
 
 def get_wheel_infos(version):
     for package in ["pantsbuild.pants", "pantsbuild.pants.testutil"]:
-        for info in requests.get(f"https://pypi.org/pypi/{package}/{version}/json").json()["urls"]:
+        for info in requests.get(f"https://pypi.org/pypi/{package}/{version}/json").json().get("urls", []):
             yield info["url"], info["filename"]
 
 
