@@ -250,7 +250,7 @@ def main(version_match) -> None:
         print(f"Uploading wheels for {version}")
         assets = {asset.name for asset in release.assets}
         for url, filename in list(wheel_infos):
-            reversioned_filename = re.sub(r"\+.*?-", "", filename).replace('linux_', "manylinux2014_")
+            reversioned_filename = re.sub(r"\+.*?-", "-", filename).replace('linux_', "manylinux2014_")
             if reversioned_filename in assets:
                 continue
 
