@@ -237,9 +237,6 @@ def main(version_match) -> None:
         if prefix != "release" or not version:
             continue
 
-        if version.count(".") != 3:  # dev releases
-            continue
-
         if not version.startswith(version_match):
             continue
 
