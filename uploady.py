@@ -33,7 +33,7 @@ def get_wheel_infos(tag_name, token):
 
     for element in links.findall("./{*}Contents/{*}Key"):
         if element.text.endswith(".whl"):
-            yield f"https://binaries.pantsbuild.org/{element.text.replace('+', '%2b')}", element.text.rsplit("/", 1)[-1], sha
+            yield f"https://binaries.pantsbuild.org/{element.text.replace('+', '%2b')}", element.text.rsplit("/", 1)[-1]
 
 
 def _github():
@@ -249,8 +249,8 @@ def main(version_match) -> None:
 
         print(f"Uploading wheels for {version}")
         assets = {asset.name for asset in release.assets}
-        for url, filename, sha in list(wheel_infos):
-            reversioned_filename = filename.replace(f"+git{sha[:8]}", "").replace('linux_', "manylinux2014_")
+        for url, filename in list(wheel_infos):
+            reversioned_filename = re.sub(r"\+.*?-", "", filename).replace('linux_', "manylinux2014_")
             if reversioned_filename in assets:
                 continue
 
