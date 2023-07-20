@@ -19,7 +19,7 @@ from xml.etree import ElementTree
 import github
 import requests
 
-def get_wheel_infos(tag_name, token):
+def get_pants_wheel_infos(tag_name, token):
     sha = requests.get(
         f"https://api.github.com/repos/pantsbuild/pants/commits/{tag_name}",
         headers={
@@ -35,6 +35,10 @@ def get_wheel_infos(tag_name, token):
         if element.text.endswith(".whl"):
             yield f"https://binaries.pantsbuild.org/{element.text.replace('+', '%2b')}", element.text.rsplit("/", 1)[-1]
 
+def get_pypi_whl_infos(version):
+    for package in ["pantsbuild.pants", "pantsbuild.pants.testutil"]:
+        for info in requests.get(f"https://pypi.org/pypi/{package}/{version}/json").json().get("urls", []):
+            yield info["url"], info["filename"], info["digests"]["md5"]
 
 def _github():
     token = subprocess.run(
@@ -232,6 +236,8 @@ def main(version_match) -> None:
     repo = github.get_repo("pantsbuild/pants")
     releases = repo.get_releases()
 
+    suffixes = set()
+
     for release in releases:
         prefix, _, version = release.tag_name.partition("_")
         if prefix != "release" or not version:
@@ -240,38 +246,26 @@ def main(version_match) -> None:
         if not version.startswith(version_match):
             continue
 
-        wheel_infos = list(get_wheel_infos(release.tag_name, token))
-        if not wheel_infos:
+        if version.count('.') != 3:
             continue
 
-        print(f"Uploading wheels for {version}")
-        assets = {asset.name for asset in release.assets}
-        for url, filename in list(wheel_infos):
-            reversioned_filename = re.sub(r"\+.*?-", "-", filename).replace('linux_', "manylinux2014_")
-            if reversioned_filename in assets:
-                continue
+        pypi_infos = list(get_pypi_whl_infos(version))
 
-            print(f"Uploading {filename} to {version} using {url}")
+        print(f"Uploading wheels for {version}")
+        for url, filename, md5 in list(pypi_infos):
+
             with open(filename, "wb") as f:
                 response = requests.get(url, stream=True)
                 response.raise_for_status()
                 for chunk in response.iter_content():
                     f.write(chunk)
 
-            new_whl = reversion(
-                whl_file=filename,
-                dest_dir=".",
-                target_version=version,
-                extra_globs=["pants/_version/VERSION", "pants/VERSION"],
-            )
-
-            with open(new_whl, "rb") as f:
-                response = requests.post(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": reversioned_filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
+            with open(filename, "rb") as f:
+                response = requests.patch(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
                 response.raise_for_status()
 
             os.remove(filename)
-            os.remove(new_whl)
-
+    print(suffixes)
 
 if __name__ == "__main__":
     import sys
