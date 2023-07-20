@@ -252,6 +252,7 @@ def main(version_match) -> None:
         pypi_infos = list(get_pypi_whl_infos(version))
 
         print(f"Uploading wheels for {version}")
+        name_to_id = {asset.name: asset.id for asset in release.assets}
         for url, filename, md5 in list(pypi_infos):
 
             with open(filename, "wb") as f:
@@ -260,8 +261,10 @@ def main(version_match) -> None:
                 for chunk in response.iter_content():
                     f.write(chunk)
 
+            response = requests.delete(f" https://api.github.com/repos/pantsbuild/pants/releases/assets/{name_to_id[filename]}",  headers={"Authorization": f"Bearer {token}"})
+
             with open(filename, "rb") as f:
-                response = requests.patch(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
+                response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
                 response.raise_for_status()
 
             os.remove(filename)
