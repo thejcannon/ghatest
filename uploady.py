@@ -36,7 +36,7 @@ def get_pants_wheel_infos(tag_name, token):
             yield f"https://binaries.pantsbuild.org/{element.text.replace('+', '%2b')}", element.text.rsplit("/", 1)[-1]
 
 def get_pypi_whl_infos(version):
-    for package in ["pantsbuild.pants.testutil"]:
+    for package in ["pantsbuild.pants"]:
         for info in requests.get(f"https://pypi.org/pypi/{package}/{version}/json").json().get("urls", []):
             yield info["url"], info["filename"], info["digests"]["md5"]
 
@@ -244,6 +244,9 @@ def main(version_match) -> None:
             continue
 
         if not version.startswith(version_match):
+            continue
+
+        if version.count('.') != 3:
             continue
 
         pypi_infos = list(get_pypi_whl_infos(version))
