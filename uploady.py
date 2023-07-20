@@ -246,7 +246,7 @@ def main(version_match) -> None:
         if not version.startswith(version_match):
             continue
 
-        if version.count('.') != 3:
+        if version.count('.') == 3:
             continue
 
         pypi_infos = list(get_pypi_whl_infos(version))
