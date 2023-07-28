@@ -36,9 +36,9 @@ def get_pants_wheel_infos(tag_name, token):
             yield f"https://binaries.pantsbuild.org/{element.text.replace('+', '%2b')}", element.text.rsplit("/", 1)[-1]
 
 def get_pypi_whl_infos(version):
-    for package in ["pantsbuild.pants"]:
+    for package in ["pantsbuild.pants", "pantsbuild.pants.testutil"]:
         for info in requests.get(f"https://pypi.org/pypi/{package}/{version}/json").json().get("urls", []):
-            yield info["url"], info["filename"], info["digests"]["md5"]
+            yield info["url"], info["filename"]
 
 def _github():
     token = subprocess.run(
@@ -236,39 +236,64 @@ def main(version_match) -> None:
     repo = github.get_repo("pantsbuild/pants")
     releases = repo.get_releases()
 
-    suffixes = set()
-
     for release in releases:
         prefix, _, version = release.tag_name.partition("_")
         if prefix != "release" or not version:
             continue
 
-        if not version.startswith(version_match):
+        stripped_version = re.sub(r"([a-z])[0-9]+", r"\1", version, count=1)
+        if stripped_version != version_match:
             continue
 
-        if version.count('.') != 3:
-            continue
-
-        pypi_infos = list(get_pypi_whl_infos(version))
+        name_to_id = {asset.name: asset.id for asset in release.assets}
+        pypi_map = {filename: url for url, filename in get_pypi_whl_infos(version)}
+        pants_map = {filename: url for url, filename in get_pants_wheel_infos(release.tag_name, token)}
 
         print(f"Uploading wheels for {version}")
-        name_to_id = {asset.name: asset.id for asset in release.assets}
-        for url, filename, md5 in list(pypi_infos):
+        for filename, url in pants_map.items():
+            reversioned_filename = re.sub(r"\+.*?-", "-", filename).replace('linux_', "manylinux2014_")
+            if reversioned_filename in pypi_map:
+                filename = reversioned_filename
+                pypi = True
+                url = pypi_map[filename]
+            else:
+                pypi = False
 
-            with open(filename, "wb") as f:
-                response = requests.get(url, stream=True)
-                response.raise_for_status()
-                for chunk in response.iter_content():
-                    f.write(chunk)
+            print(f"Downloading {url}")
+            for retry in range(0):
+                with open(filename, "wb") as f:
+                    response = requests.get(url, stream=True)
+                    response.raise_for_status()
+                    for chunk in response.iter_content():
+                        f.write(chunk)
+                break
+            print(f"Downloaded {filename} from {url}")
 
-            response = requests.delete(f" https://api.github.com/repos/pantsbuild/pants/releases/assets/{name_to_id[filename]}",  headers={"Authorization": f"Bearer {token}"})
+            if not pypi:
+                print(f"Reversioning {filename}")
+                new_whl = reversion(
+                    whl_file=filename,
+                    dest_dir=".",
+                    target_version=version,
+                    extra_globs=["pants/_version/VERSION", "pants/VERSION"],
+                )
+                os.remove(filename)
+                filename = new_whl.lstrip("./")
+            else:
+                print("PyPI release, skipping reversioning")
 
-            with open(filename, "rb") as f:
-                response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
-                response.raise_for_status()
+            if filename in name_to_id:
+                response = requests.delete(f"https://api.github.com/repos/pantsbuild/pants/releases/assets/{name_to_id[filename]}",  headers={"Authorization": f"Bearer {token}"})
+
+            print(f"Uploading {filename}")
+            for retry in range(0):
+                with open(filename, "rb") as f:
+                    response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
+                    response.raise_for_status()
+                break
 
             os.remove(filename)
-    print(suffixes)
+
 
 if __name__ == "__main__":
     import sys
