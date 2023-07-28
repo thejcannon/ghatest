@@ -260,7 +260,7 @@ def main(version_match) -> None:
                 pypi = False
 
             print(f"Downloading {url}")
-            for retry in range(0):
+            for retry in range(5):
                 with open(filename, "wb") as f:
                     response = requests.get(url, stream=True)
                     response.raise_for_status()
@@ -286,7 +286,7 @@ def main(version_match) -> None:
                 response = requests.delete(f"https://api.github.com/repos/pantsbuild/pants/releases/assets/{name_to_id[filename]}",  headers={"Authorization": f"Bearer {token}"})
 
             print(f"Uploading {filename}")
-            for retry in range(0):
+            for retry in range(5):
                 with open(filename, "rb") as f:
                     response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
                     response.raise_for_status()
