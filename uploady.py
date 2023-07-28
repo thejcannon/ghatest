@@ -261,12 +261,15 @@ def main(version_match) -> None:
 
             print(f"Downloading {url}")
             for retry in range(5):
-                with open(filename, "wb") as f:
-                    response = requests.get(url, stream=True)
-                    response.raise_for_status()
-                    for chunk in response.iter_content():
-                        f.write(chunk)
-                break
+                try:
+                    with open(filename, "wb") as f:
+                        response = requests.get(url, stream=True)
+                        response.raise_for_status()
+                        for chunk in response.iter_content():
+                            f.write(chunk)
+                    break
+                except Exception:
+                    continue
             print(f"Downloaded {filename} from {url}")
 
             if not pypi:
@@ -287,10 +290,13 @@ def main(version_match) -> None:
 
             print(f"Uploading {filename}")
             for retry in range(5):
-                with open(filename, "rb") as f:
-                    response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
-                    response.raise_for_status()
-                break
+                try:
+                    with open(filename, "rb") as f:
+                        response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": filename}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
+                        response.raise_for_status()
+                    break
+                except Exception:
+                    continue
 
             os.remove(filename)
 
