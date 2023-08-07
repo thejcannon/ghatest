@@ -15,6 +15,6 @@ jobs:
       - uses: actions/checkout@v3
       - run: python -m venv .venv
       - run: .venv/bin/pip install pygithub wheel
-      - run: .venv/bin/python releasey.py ${{ inputs.tag }}
+      - run: .venv/bin/python uploady.py ${{ inputs.tag }}
         env:
           GH_TOKEN: ${{ secrets.GHTOK }}
