@@ -241,8 +241,7 @@ def main(version_match) -> None:
         if prefix != "release" or not version:
             continue
 
-        stripped_version = re.sub(r"([a-z])[0-9]+", r"\1", version, count=1)
-        if stripped_version != version_match:
+        if version != version_match:
             continue
 
         name_to_id = {asset.name: asset.id for asset in release.assets}
