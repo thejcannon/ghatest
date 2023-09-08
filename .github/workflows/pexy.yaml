@@ -1,0 +1,20 @@
+name: Pexy
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefix:
+        description: "prefix"
+        required: true
+        type: string
+
+jobs:
+  uploady:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install pygithub wheel pex
+      - run: .venv/bin/python pexy.py ${{ inputs.prefix }}
+        env:
+          GH_TOKEN: ${{ secrets.GHTOK }}
