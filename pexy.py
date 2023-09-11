@@ -11,9 +11,9 @@ def _github():
     token = subprocess.run(
         ["gh", "auth", "token"], check=True, text=True, capture_output=True
     ).stdout.strip()
-    return github.Github(auth=github.Auth.Token(token))
+    return github.Github(auth=github.Auth.Token(token)), token
 
-gh = _github()
+gh, token = _github()
 repo = gh.get_repo("pantsbuild/pants")
 
 def do_one(version):
@@ -78,10 +78,21 @@ def do_one(version):
                 "--console-script=pants",
                 "--venv",
                 f"--platform={platform}-cp-{pyver[2:]}-{pyver}",
-            ]
+            ],
+            check=True
         )
 
-def main(prefix):
+        print(f"Uploading {pex_name}")
+        for retry in range(5):
+            try:
+                with open(pex_name, "rb") as f:
+                    response = requests.put(f"https://uploads.github.com/repos/pantsbuild/pants/releases/{release.id}/assets", params={"name": pex_name}, headers={"Content-Type": "application/octet-stream", "Authorization": f"Bearer {token}"}, data=f)
+                    response.raise_for_status()
+                break
+            except Exception:
+                continue
+
+def main(testprefix):
     releases = repo.get_releases()
 
     for release in releases:
@@ -89,7 +100,7 @@ def main(prefix):
         if prefix != "release" or not version:
             continue
 
-        if not version.startswith(prefix):
+        if not version.startswith(testprefix):
             continue
 
         do_one(release.tag_name.split("_")[1])
