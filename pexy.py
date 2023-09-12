@@ -16,28 +16,6 @@ def _github():
 gh, token = _github()
 repo = gh.get_repo("pantsbuild/pants")
 
-def make_turbo_links(versions):
-    with open("turbolinks.html", "w") as fp:
-        for version in versions:
-            tag = f"release_{version}"
-            tag_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/refs/tags/{tag}")[1]["object"]["sha"]
-            commit_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/tags/{tag_sha}")[1]['object']["sha"]
-
-            list_bucket_results = requests.get(f"https://binaries.pantsbuild.org?prefix=wheels/3rdparty/{commit_sha[:8]}").content
-
-            # N.B.: S3 bucket listings use a default namespace. Although the URI is apparently stable,
-            # we decouple from it with the wildcard.
-            for key in ElementTree.fromstring(list_bucket_results).findall("./{*}Contents/{*}Key"):
-                bucket_path = str(key.text)
-                fp.write(
-                    f'<a href="https://binaries.pantsbuild.org/{urllib.parse.quote(bucket_path)}">'
-                    f"{os.path.basename(bucket_path)}"
-                    f"</a>\n"
-                )
-            fp.flush()
-
-
-
 def do_one(version):
     tag = f"release_{version}"
     release = repo.get_release(tag)
@@ -46,6 +24,8 @@ def do_one(version):
 
     USES_PYTHON_39 = int(version.split(".")[1]) >= 5  # Pants 2.5 was Py 3.9
     pyver = "cp39" if USES_PYTHON_39 else "cp38"
+    if f"pants.{version}-{pyver}-linux_x86_64.pex" in assets:
+        return
 
     wheel_to_pex_map = {
         f"pantsbuild.pants-{version}-{pyver}-{pyver}-macosx_10_11_x86_64.whl": f"pants.{version}-{pyver}-darwin_86_64.pex",
@@ -59,10 +39,24 @@ def do_one(version):
         key: value for key, value in wheel_to_pex_map.items() if key in assets
     }
 
-    for wheel_name, pex_name in wheel_to_pex_map.items():
-        if pex_name in assets:
-            continue
+    tag_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/refs/tags/{tag}")[1]["object"]["sha"]
+    commit_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/tags/{tag_sha}")[1]['object']["sha"]
 
+    list_bucket_results = requests.get(f"https://binaries.pantsbuild.org?prefix=wheels/3rdparty/{commit_sha[:8]}").content
+
+    with open("links.html", "w") as fp:
+        # N.B.: S3 bucket listings use a default namespace. Although the URI is apparently stable,
+        # we decouple from it with the wildcard.
+        for key in ElementTree.fromstring(list_bucket_results).findall("./{*}Contents/{*}Key"):
+            bucket_path = str(key.text)
+            fp.write(
+                f'<a href="https://binaries.pantsbuild.org/{urllib.parse.quote(bucket_path)}">'
+                f"{os.path.basename(bucket_path)}"
+                f"</a>\n"
+            )
+        fp.flush()
+
+    for wheel_name, pex_name in wheel_to_pex_map.items():
         platform = wheel_name.rsplit(".", 1)[0].rsplit("-", 1)[-1].replace("manylinux2014", "linux")
         subprocess.run(
             [
@@ -75,7 +69,7 @@ def do_one(version):
                 "-f",
                 "https://wheels.pantsbuild.org/simple",
                 "-f",
-                "turbolinks.html",
+                "links.html",
                 f"pantsbuild.pants=={version}",
                 "--no-build",
                 "--no-pypi",
@@ -85,8 +79,10 @@ def do_one(version):
                 "--venv",
                 f"--platform={platform}-cp-{pyver[2:]}-{pyver}",
             ],
-            check=True
         )
+
+        if not os.path.exists(pex_name):
+            continue
 
         print(f"Uploading {pex_name}")
         for retry in range(5):
@@ -101,7 +97,6 @@ def do_one(version):
 def main(testprefix):
     releases = repo.get_releases()
 
-    versions=[]
     for release in releases:
         prefix, _, version = release.tag_name.partition("_")
         if prefix != "release" or not version:
@@ -110,10 +105,6 @@ def main(testprefix):
         if not version.startswith(testprefix):
             continue
 
-        versions.append(release.tag_name.split("_")[1])
-
-    make_turbo_links(versions)
-    for version in versions:
         do_one(version)
 
 if __name__ == "__main__":
