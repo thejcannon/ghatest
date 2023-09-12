@@ -39,10 +39,13 @@ def do_one(release):
         key: value for key, value in wheel_to_pex_map.items() if key in assets
     }
 
-    tag_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/refs/tags/{tag}")[1]["object"]["sha"]
-    commit_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/tags/{tag_sha}")[1]['object']["sha"]
+    commit_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/refs/tags/{tag}")[1]["object"]["sha"]
 
-    list_bucket_results = requests.get(f"https://binaries.pantsbuild.org?prefix=wheels/3rdparty/{commit_sha[:8]}").content
+    try:
+        list_bucket_results = requests.get(f"https://binaries.pantsbuild.org?prefix=wheels/3rdparty/{commit_sha[:8]}").content
+    except Exception:
+        commit_sha = repo._requester.requestJsonAndCheck("GET", f"{repo.url}/git/tags/{tag}")[1]['object']["sha"]
+        list_bucket_results = requests.get(f"https://binaries.pantsbuild.org?prefix=wheels/3rdparty/{commit_sha[:8]}").content
 
     with open("links.html", "w") as fp:
         # N.B.: S3 bucket listings use a default namespace. Although the URI is apparently stable,
@@ -57,6 +60,9 @@ def do_one(release):
         fp.flush()
 
     for wheel_name, pex_name in wheel_to_pex_map.items():
+        if pex_name in assets:
+            continue
+
         platform = wheel_name.rsplit(".", 1)[0].rsplit("-", 1)[-1].replace("manylinux2014", "linux")
         subprocess.run(
             [
@@ -102,10 +108,10 @@ def main(testprefix):
         if prefix != "release" or not version:
             continue
 
-        if not version.startswith(release):
+        if not version.startswith(testprefix):
             continue
 
-        do_one(version)
+        do_one(release)
 
 if __name__ == "__main__":
     import sys
