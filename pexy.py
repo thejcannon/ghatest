@@ -16,9 +16,9 @@ def _github():
 gh, token = _github()
 repo = gh.get_repo("pantsbuild/pants")
 
-def do_one(version):
-    tag = f"release_{version}"
-    release = repo.get_release(tag)
+def do_one(release):
+    tag = release.tag_name
+    prefix, _, version = release.tag_name.partition("_")
 
     assets = {asset.name for asset in release.assets}
 
@@ -102,7 +102,7 @@ def main(testprefix):
         if prefix != "release" or not version:
             continue
 
-        if not version.startswith(testprefix):
+        if not version.startswith(release):
             continue
 
         do_one(version)
