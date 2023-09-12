@@ -76,7 +76,6 @@ def do_one(release):
                 "links.html",
                 f"pantsbuild.pants=={version}",
                 "--no-build",
-                "--no-pypi",
                 "--disable-cache",
                 "--no-strip-pex-env",
                 "--console-script=pants",
