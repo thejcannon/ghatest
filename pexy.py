@@ -24,15 +24,13 @@ def do_one(release):
 
     USES_PYTHON_39 = int(version.split(".")[1]) >= 5  # Pants 2.5 was Py 3.9
     pyver = "cp39" if USES_PYTHON_39 else "cp38"
-    if f"pants.{version}-{pyver}-linux_x86_64.pex" in assets:
-        return
 
     wheel_to_pex_map = {
-        f"pantsbuild.pants-{version}-{pyver}-{pyver}-macosx_10_11_x86_64.whl": f"pants.{version}-{pyver}-darwin_86_64.pex",
-        f"pantsbuild.pants-{version}-{pyver}-{pyver}-macosx_10_15_x86_64.whl": f"pants.{version}-{pyver}-darwin_86_64.pex",
+        f"pantsbuild.pants-{version}-{pyver}-{pyver}-macosx_10_11_x86_64.whl": f"pants.{version}-{pyver}-darwin_x86_64.pex",
+        f"pantsbuild.pants-{version}-{pyver}-{pyver}-macosx_10_15_x86_64.whl": f"pants.{version}-{pyver}-darwin_x86_64.pex",
         f"pantsbuild.pants-{version}-{pyver}-{pyver}-macosx_11_0_arm64.whl": f"pants.{version}-{pyver}-darwin_arm64.pex",
         f"pantsbuild.pants-{version}-{pyver}-{pyver}-manylinux2014_aarch64.whl": f"pants.{version}-{pyver}-linux_aarch64.pex",
-        f"pantsbuild.pants-{version}-{pyver}-{pyver}-manylinux2014_x86_64.whl": f"pants.{version}-{pyver}-linux_86_64.pex",
+        f"pantsbuild.pants-{version}-{pyver}-{pyver}-manylinux2014_x86_64.whl": f"pants.{version}-{pyver}-linux_x86_64.pex",
     }
 
     wheel_to_pex_map = {
