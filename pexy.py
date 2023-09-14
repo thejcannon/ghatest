@@ -74,6 +74,15 @@ def do_one(release):
                 f"{os.path.basename(bucket_path)}"
                 f"</a>\n"
             )
+        # AHA!
+        list_bucket_results = requests.get("https://binaries.pantsbuild.org/?prefix=wheels/3rdparty/e338a90a").content
+        for key in ElementTree.fromstring(list_bucket_results).findall("./{*}Contents/{*}Key"):
+            bucket_path = str(key.text)
+            fp.write(
+                f'<a href="https://binaries.pantsbuild.org/{urllib.parse.quote(bucket_path)}">'
+                f"{os.path.basename(bucket_path)}"
+                f"</a>\n"
+            )
 
         fp.flush()
 
