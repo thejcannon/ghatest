@@ -65,6 +65,15 @@ def do_one(release):
                 f"{os.path.basename(bucket_path)}"
                 f"</a>\n"
             )
+        # AHA!
+        list_bucket_results = requests.get("https://binaries.pantsbuild.org/?prefix=wheels/3rdparty/869d82ed").content
+        for key in ElementTree.fromstring(list_bucket_results).findall("./{*}Contents/{*}Key"):
+            bucket_path = str(key.text)
+            fp.write(
+                f'<a href="https://binaries.pantsbuild.org/{urllib.parse.quote(bucket_path)}">'
+                f"{os.path.basename(bucket_path)}"
+                f"</a>\n"
+            )
 
         fp.flush()
 
@@ -110,30 +119,7 @@ def do_one(release):
                 continue
 
 versions = {
-    "release_2.12.1rc0",
-"release_2.12.0",
-"release_2.11.1",
-"release_2.12.0rc3",
-"release_2.11.1rc3",
-"release_2.12.0rc2",
-"release_2.11.1rc2",
-"release_2.9.2",
 "release_2.8.1",
-"release_2.10.1",
-"release_2.11.1rc0",
-"release_2.11.0",
-"release_2.11.0rc6",
-"release_2.12.0a0",
-"release_2.11.0rc3",
-"release_2.11.0rc2",
-"release_2.9.2rc0",
-"release_2.10.1rc0",
-"release_2.11.0rc1",
-"release_2.12.0",
-"release_2.10.0",
-"release_2.11.0rc0",
-"release_2.10.0rc2",
-"release_2.9.1rc0",
 "release_2.9.0",
 "release_2.9.0rc6",
 "release_2.9.0rc5",
