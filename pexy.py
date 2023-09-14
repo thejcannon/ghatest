@@ -119,29 +119,7 @@ def do_one(release):
                 continue
 
 versions = {
-"release_2.8.1",
-"release_2.9.0",
-"release_2.9.0rc6",
-"release_2.9.0rc5",
-"release_2.9.0rc4",
-"release_2.9.0rc3",
-"release_2.9.0rc2",
-"release_2.9.0rc0",
-"release_2.8.1rc1",
-"release_2.8.1rc0",
-"release_2.8.0",
-"release_2.8.0rc5",
-"release_2.7.2rc2",
-"release_2.8.0rc2",
-"release_2.7.2rc1",
-"release_2.7.1rc1",
-"release_2.7.1rc0",
-"release_2.7.0",
-"release_2.7.0rc5",
-"release_2.6.1",
-"release_2.7.0rc3",
-"release_2.7.0rc2",
-"release_2.7.0rc1",
+"release_2.12.0.dev0",
 }
 
 def main():
