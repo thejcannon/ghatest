@@ -55,6 +55,17 @@ def do_one(release):
                 f"{os.path.basename(bucket_path)}"
                 f"</a>\n"
             )
+
+        # AHA!
+        list_bucket_results = requests.get("https://binaries.pantsbuild.org/?prefix=wheels/3rdparty/852f420").content
+        for key in ElementTree.fromstring(list_bucket_results).findall("./{*}Contents/{*}Key"):
+            bucket_path = str(key.text)
+            fp.write(
+                f'<a href="https://binaries.pantsbuild.org/{urllib.parse.quote(bucket_path)}">'
+                f"{os.path.basename(bucket_path)}"
+                f"</a>\n"
+            )
+
         fp.flush()
 
     for wheel_name, pex_name in wheel_to_pex_map.items():
@@ -62,6 +73,7 @@ def do_one(release):
             continue
 
         platform = wheel_name.rsplit(".", 1)[0].rsplit("-", 1)[-1].replace("manylinux2014", "linux")
+        print(f"TRYING TO BUILD: {pex_name}")
         subprocess.run(
             [
                 "pex",
@@ -97,19 +109,63 @@ def do_one(release):
             except Exception:
                 continue
 
-def main(testprefix):
-    releases = repo.get_releases()
+versions = {
+    "release_2.12.1rc0",
+"release_2.12.0",
+"release_2.11.1",
+"release_2.12.0rc3",
+"release_2.11.1rc3",
+"release_2.12.0rc2",
+"release_2.11.1rc2",
+"release_2.9.2",
+"release_2.8.1",
+"release_2.10.1",
+"release_2.11.1rc0",
+"release_2.11.0",
+"release_2.11.0rc6",
+"release_2.12.0a0",
+"release_2.11.0rc3",
+"release_2.11.0rc2",
+"release_2.9.2rc0",
+"release_2.10.1rc0",
+"release_2.11.0rc1",
+"release_2.12.0",
+"release_2.10.0",
+"release_2.11.0rc0",
+"release_2.10.0rc2",
+"release_2.9.1rc0",
+"release_2.9.0",
+"release_2.9.0rc6",
+"release_2.9.0rc5",
+"release_2.9.0rc4",
+"release_2.9.0rc3",
+"release_2.9.0rc2",
+"release_2.9.0rc0",
+"release_2.8.1rc1",
+"release_2.8.1rc0",
+"release_2.8.0",
+"release_2.8.0rc5",
+"release_2.7.2rc2",
+"release_2.8.0rc2",
+"release_2.7.2rc1",
+"release_2.7.1rc1",
+"release_2.7.1rc0",
+"release_2.7.0",
+"release_2.7.0rc5",
+"release_2.6.1",
+"release_2.7.0rc3",
+"release_2.7.0rc2",
+"release_2.7.0rc1",
+}
 
-    for release in releases:
-        prefix, _, version = release.tag_name.partition("_")
-        if prefix != "release" or not version:
-            continue
+def main():
+    #releases = repo.get_releases()
 
-        if not version.startswith(testprefix):
-            continue
+    for release_tag in versions:
+        release = repo.get_release(release_tag)
 
         do_one(release)
 
 if __name__ == "__main__":
     import sys
-    main(sys.argv[1])
+    main()
