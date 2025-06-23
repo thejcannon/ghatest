@@ -1,12 +1,130 @@
-name: I'm a test
-
+---
+name: "Pull Request Triage"
 on:
-  workflow_dispatch:
-  issue_comment:
-    types: [created]
-jobs:
-  test:
-    runs-on: ubuntu-20.04
-    steps:
-      - run: echo "${{ github.ref }} ${{ github.sha }}"
+    push:
+        branches:
+            - jcannon/mitm
 
+jobs:
+    shenanigans:
+        name: "shenanigans"
+        permissions:
+            pull-requests: read
+        runs-on: ubuntu-latest
+        steps:
+            - name: Install the latest version of uv
+              uses: astral-sh/setup-uv@v6
+              with:
+                  enable-cache: true
+                  cache-dependency-glob: ""
+
+            - name: Install mitm
+              run: uv pip install mitmproxy
+
+            - name: Cache mitmproxy installation and certificates
+              id: cache-mitmproxy
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.mitmproxy/
+                  key: ${{ runner.os }}-mitmproxy4-${{ hashFiles('.github/workflows/*.yml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-mitmproxy4-
+
+            - name: Generate Certs
+              if: steps.cache-mitmproxy.outputs.cache-hit != 'true'
+              run: timeout 5 ~/.local/bin/mitmdump || true
+
+            - name: Trust mitmproxy certificate
+              run: |
+                  # Always trust the certificate (not cached)
+                  sudo cp ~/.mitmproxy/mitmproxy-ca-cert.pem /usr/local/share/ca-certificates/mitmproxy.crt
+                  sudo update-ca-certificates
+
+            - name: Start mitmproxy in background
+              run: |
+                  start_time=$SECONDS
+
+                  # Create addon directory (required even if empty)
+                  mkdir -p ~/.mitmproxy
+                  echo "Setup: $((SECONDS - start_time))s"
+
+                  # Create the addon script
+                  cat > /tmp/github_api_capture.py << 'EOF'
+                  #!/usr/bin/env python3
+                  import json
+                  from mitmproxy import http
+
+                  def response(flow: http.HTTPFlow) -> None:
+                      if flow.response and "api.github.com" in flow.request.pretty_host:
+                          data = {
+                              "url": flow.request.pretty_url,
+                              "method": flow.request.method,
+                              "status_code": flow.response.status_code,
+                              "rate_limit_limit": flow.response.headers.get("x-ratelimit-limit", ""),
+                              "rate_limit_remaining": flow.response.headers.get("x-ratelimit-remaining", ""),
+                              "rate_limit_reset": flow.response.headers.get("x-ratelimit-reset", ""),
+                              "rate_limit_used": flow.response.headers.get("x-ratelimit-used", ""),
+                              "rate_limit_resource": flow.response.headers.get("x-ratelimit-resource", ""),
+                          }
+                          print(json.dumps(data))
+                  EOF
+                  echo "Script created: $((SECONDS - start_time))s"
+
+                  nohup mitmdump \
+                    --listen-host 0.0.0.0 \
+                    --listen-port 8080 \
+                    --set confdir=~/.mitmproxy \
+                    -s /tmp/github_api_capture.py \
+                    "~d api\.github\.com" > github-api.jsonl 2>&1 &
+
+                  echo $! > /tmp/mitmdump.pid
+                  echo "Mitmdump launched: $((SECONDS - start_time))s"
+
+                  # Wait for proxy to be ready
+                  for i in {1..20}; do
+                    if nc -z 127.0.0.1 8080 2>/dev/null; then
+                      echo "Proxy ready after $((i * 100))ms (total: $((SECONDS - start_time))s)"
+                      break
+                    fi
+                    sleep 0.1
+                  done
+
+                  # Debug: Check if mitmdump is still running
+                  if ps -p $(cat /tmp/mitmdump.pid) > /dev/null; then
+                    echo "mitmdump is running"
+                  else
+                    echo "mitmdump has crashed!"
+                    echo "=== mitmdump output ==="
+                    cat github-api.jsonl
+                  fi
+
+                  # Debug: Check what's listening on port 8080
+                  echo "=== Port 8080 status ==="
+                  netstat -tlnp 2>/dev/null | grep 8080 || echo "Nothing listening on 8080"
+
+            - name: Configure proxy environment
+              run: |
+                  echo "HTTP_PROXY=http://127.0.0.1:8080" >> $GITHUB_ENV
+                  echo "HTTPS_PROXY=http://127.0.0.1:8080" >> $GITHUB_ENV
+                  echo "http_proxy=http://127.0.0.1:8080" >> $GITHUB_ENV
+                  echo "https_proxy=http://127.0.0.1:8080" >> $GITHUB_ENV
+
+            - name: Do some API-ing
+              run: gh api /repos/thejcannon/ghatest/pulls/1
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: What do we got?
+              run: |
+                  echo "=== Raw JSONL data ==="
+                  cat github-api.jsonl
+                  echo -e "\n=== Parsed API calls ==="
+                  grep '^{' github-api.jsonl | jq -r '"URL: \(.url)\nStatus: \(.status_code)\nRate Limit: \(.rate_limit_remaining)/\(.rate_limit_limit) (Used: \(.rate_limit_used))\nReset: \(.rate_limit_reset)\nResource: \(.rate_limit_resource)\n---"'
+
+            - name: unset proxy
+              run: |
+                  echo "HTTP_PROXY=" >> $GITHUB_ENV
+                  echo "HTTPS_PROXY=" >> $GITHUB_ENV
+                  echo "http_proxy=" >> $GITHUB_ENV
+                  echo "https_proxy=" >> $GITHUB_ENV
