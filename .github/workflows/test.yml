@@ -21,7 +21,7 @@ jobs:
             - name: Install mitm
               run: |
                   uv venv
-                  uv pip install --system mitmproxy
+                  uv pip install mitmproxy
 
             - name: Cache mitmproxy installation and certificates
               id: cache-mitmproxy
