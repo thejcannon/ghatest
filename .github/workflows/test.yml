@@ -19,7 +19,9 @@ jobs:
                   cache-dependency-glob: ""
 
             - name: Install mitm
-              run: uv pip install --system mitmproxy
+              run: |
+                  uv venv
+                  uv pip install --system mitmproxy
 
             - name: Cache mitmproxy installation and certificates
               id: cache-mitmproxy
