@@ -113,7 +113,7 @@ jobs:
                   echo "https_proxy=http://127.0.0.1:8080" >> $GITHUB_ENV
 
             - name: Do some API-ing
-              run: gh api /repos/anthropics/anthropic/pulls/115581
+              run: gh api /repos/thejcannon/ghatest/pulls/1
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
