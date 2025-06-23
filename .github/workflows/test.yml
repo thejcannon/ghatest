@@ -35,7 +35,7 @@ jobs:
 
             - name: Generate Certs
               if: steps.cache-mitmproxy.outputs.cache-hit != 'true'
-              run: timeout 5 ~/.local/bin/mitmdump || true
+              run: timeout 5 uv run mitmdump || true
 
             - name: Trust mitmproxy certificate
               run: |
@@ -73,7 +73,7 @@ jobs:
                   EOF
                   echo "Script created: $((SECONDS - start_time))s"
 
-                  nohup mitmdump \
+                  nohup uv run mitmdump \
                     --listen-host 0.0.0.0 \
                     --listen-port 8080 \
                     --set confdir=~/.mitmproxy \
