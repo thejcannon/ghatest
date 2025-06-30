@@ -1,12 +1,26 @@
-name: I'm a test
-
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
-  issue_comment:
-    types: [created]
-jobs:
-  test:
-    runs-on: ubuntu-20.04
-    steps:
-      - run: echo "${{ github.ref }} ${{ github.sha }}"
+    inputs:
+      pull-number:
+        type: number
+        required: true
 
+jobs:
+  trigger-job:
+    name: Trigger the workflow
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh workflow run test.yml --ref main -F pull-number=${{ github.event.pull_request.number }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  the-job:
+    name: Name
+    runs-on: ubuntu-latest
+    environment: main
+    steps:
+      - run: 'echo "hi"'
