@@ -1,6 +1,7 @@
 on:
   pull_request:
     branches: [main]
+    types: [commented]
   workflow_dispatch:
     inputs:
       pull-number:
@@ -9,6 +10,7 @@ on:
 
 jobs:
   trigger-job:
+    if: github.event_name == "pull_request"
     name: Trigger the workflow
     runs-on: ubuntu-latest
     permissions:
@@ -19,6 +21,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
   the-job:
+    if: github.event_name == "workflow_dispatch"
     name: Name
     runs-on: ubuntu-latest
     environment: main
