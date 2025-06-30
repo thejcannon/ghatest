@@ -10,7 +10,7 @@ on:
 
 jobs:
   trigger-job:
-    if: github.event_name == "pull_request"
+    if: github.event_name == 'pull_request'
     name: Trigger the workflow
     runs-on: ubuntu-latest
     permissions:
@@ -21,7 +21,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
   the-job:
-    if: github.event_name == "workflow_dispatch"
+    if: github.event_name == 'workflow_dispatch'
     name: Name
     runs-on: ubuntu-latest
     environment: main
