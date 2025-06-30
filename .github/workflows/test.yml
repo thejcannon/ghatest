@@ -19,6 +19,7 @@ jobs:
       - run: gh workflow run test.yml --ref main -F pull-number=${{ github.event.pull_request.number }}
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
 
   the-job:
     if: github.event_name == 'workflow_dispatch'
